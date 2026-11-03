@@ -43,7 +43,7 @@ private fun FotosRoot() {
         if (access != MediaAccess.NONE) container.mediaSync.requestSync()
     }
 
-    FotosTheme(mode = settings.theme, colorSource = settings.colorSource, seedColor = settings.seedColor) {
+    FotosTheme(mode = settings.theme, dynamicColor = settings.dynamicColor) {
         if (access == MediaAccess.NONE) {
             PermissionScreen(onResult = { access = MediaPermission.access(context) })
         } else {

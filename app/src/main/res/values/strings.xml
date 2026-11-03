@@ -77,13 +77,8 @@
     <string name="theme_system">Igual ao sistema</string>
     <string name="theme_light">Claro</string>
     <string name="theme_dark">Escuro</string>
-    <string name="settings_colors">Cores</string>
-    <string name="colors_wallpaper">Fundo de ecrã</string>
-    <string name="colors_wallpaper_body">Usa as cores do Material You.</string>
-    <string name="colors_photo">A partir de uma fotografia</string>
-    <string name="colors_photo_body">No visualizador, toca na paleta para usar as cores de uma fotografia.</string>
-    <string name="colors_default">Padrão</string>
-    <string name="colors_default_body">A paleta azul da app.</string>
+    <string name="settings_dynamic_color">Cores do fundo de ecrã</string>
+    <string name="settings_dynamic_color_body">Usa as cores do Material You.</string>
     <string name="settings_management">Gestão</string>
     <string name="settings_manage_media">Gerir multimédia sem confirmação</string>
     <string name="settings_manage_media_on">Ativo: mover para a reciclagem e restaurar não pedem confirmação.</string>
@@ -91,16 +86,4 @@
     <string name="settings_privacy">Privacidade</string>
     <string name="settings_offline">Sem acesso à Internet</string>
     <string name="settings_offline_body">A app não pede permissão de rede: as tuas fotografias nunca saem do dispositivo.</string>
-
-    <!-- Visualizador -->
-    <string name="theme_from_photo">Usar as cores desta fotografia</string>
-    <string name="theme_from_photo_done">A app agora tem as cores desta fotografia.</string>
-
-    <!-- Memórias -->
-    <string name="memories_title">Por esta altura</string>
-    <plurals name="years_ago">
-        <item quantity="one">Há %d ano</item>
-        <item quantity="other">Há %d anos</item>
-    </plurals>
-
 </resources>

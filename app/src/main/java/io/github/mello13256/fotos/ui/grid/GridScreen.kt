@@ -7,16 +7,14 @@ import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.outlined.Delete
-import androidx.compose.material.icons.outlined.PhotoLibrary
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.LibraryAdd
 import androidx.compose.material.icons.outlined.RemoveCircleOutline
@@ -52,7 +50,6 @@ import io.github.mello13256.fotos.R
 import io.github.mello13256.fotos.data.AppSettings
 import io.github.mello13256.fotos.data.CollectionRepository
 import io.github.mello13256.fotos.data.MediaSource
-import io.github.mello13256.fotos.ui.common.LocalBottomBarSpace
 import io.github.mello13256.fotos.ui.common.appContainer
 import io.github.mello13256.fotos.ui.common.shareMedia
 import kotlinx.coroutines.launch
@@ -71,9 +68,6 @@ fun GridScreen(
     actions: @Composable RowScope.() -> Unit = {},
     header: @Composable () -> Unit = {},
     emptyText: String = stringResource(R.string.empty_library),
-    leading: (@Composable () -> Unit)? = null,
-    focusId: Long? = null,
-    onFocusConsumed: () -> Unit = {},
 ) {
     val container = appContainer()
     val context = LocalContext.current
@@ -86,8 +80,6 @@ fun GridScreen(
     val hasSynced by container.mediaSync.hasSynced.collectAsStateWithLifecycle()
     val collections by container.collections.summaries.collectAsStateWithLifecycle(emptyList())
     var showPicker by remember { mutableStateOf(false) }
-    val gridState = rememberLazyGridState()
-    val bottomBarSpace = LocalBottomBarSpace.current
 
     val trashLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) {
         if (it.resultCode == Activity.RESULT_OK) viewModel.onTrashed()
@@ -164,7 +156,6 @@ fun GridScreen(
                 .padding(top = padding.calculateTopPadding()),
         ) {
             header()
-            val bottomPadding = padding.calculateBottomPadding() + bottomBarSpace
             Box(Modifier.fillMaxSize()) {
                 MediaGrid(
                     items = items,
@@ -174,37 +165,22 @@ fun GridScreen(
                     onSelectionChange = viewModel::setSelection,
                     onOpen = { onOpen(source, it.id) },
                     modifier = Modifier.fillMaxSize(),
-                    bottomPadding = bottomPadding,
-                    state = gridState,
-                    leading = leading,
-                    focusId = focusId,
-                    onFocusConsumed = onFocusConsumed,
+                    contentPadding = PaddingValues(bottom = padding.calculateBottomPadding() + 8.dp),
                 )
                 val loading = items.loadState.refresh is LoadState.Loading
                 if (items.itemCount == 0 && !loading) {
                     if (!hasSynced) {
                         CircularProgressIndicator(Modifier.align(Alignment.Center))
                     } else {
-                        Column(
-                            Modifier
+                        Text(
+                            emptyText,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier
                                 .align(Alignment.Center)
                                 .padding(32.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                        ) {
-                            Icon(
-                                Icons.Outlined.PhotoLibrary,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(56.dp),
-                            )
-                            Text(
-                                emptyText,
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier.padding(top = 16.dp),
-                            )
-                        }
+                        )
                     }
                 }
             }

@@ -31,8 +31,6 @@ fun CollectionScreen(
     collectionId: Long,
     onBack: () -> Unit,
     onOpen: (MediaSource, Long) -> Unit,
-    focusId: Long? = null,
-    onFocusConsumed: () -> Unit = {},
 ) {
     val container = appContainer()
     val scope = rememberCoroutineScope()
@@ -54,8 +52,6 @@ fun CollectionScreen(
         title = title,
         onOpen = onOpen,
         onBack = onBack,
-        focusId = focusId,
-        onFocusConsumed = onFocusConsumed,
         emptyText = stringResource(R.string.empty_collection),
         actions = {
             if (current != null && !current.isFavorites) {
@@ -122,15 +118,11 @@ fun FolderScreen(
     name: String,
     onBack: () -> Unit,
     onOpen: (MediaSource, Long) -> Unit,
-    focusId: Long? = null,
-    onFocusConsumed: () -> Unit = {},
 ) {
     GridScreen(
         viewModel = gridViewModel(MediaSource.Folder(relativePath)),
         title = name.ifBlank { relativePath },
         onOpen = onOpen,
         onBack = onBack,
-        focusId = focusId,
-        onFocusConsumed = onFocusConsumed,
     )
 }

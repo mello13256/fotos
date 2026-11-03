@@ -1,17 +1,11 @@
 package io.github.mello13256.fotos.ui.albums
 
 import androidx.annotation.StringRes
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -44,14 +38,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
@@ -59,7 +49,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import io.github.mello13256.fotos.R
 import io.github.mello13256.fotos.image.MediaThumbnail
-import io.github.mello13256.fotos.ui.common.LocalBottomBarSpace
 import io.github.mello13256.fotos.ui.common.appContainer
 import io.github.mello13256.fotos.ui.grid.NameDialog
 import kotlinx.coroutines.launch
@@ -73,51 +62,47 @@ fun AlbumsScreen(
 ) {
     val container = appContainer()
     val scope = rememberCoroutineScope()
-    val collections by remember(container) { container.media.collectionTiles(container.collections.summaries) }
-        .collectAsStateWithLifecycle(emptyList())
-    val folders by remember(container) { container.media.folderTiles() }.collectAsStateWithLifecycle(emptyList())
+    val collections by container.collections.summaries.collectAsStateWithLifecycle(emptyList())
+    val folders by remember(container) { container.media.folders() }.collectAsStateWithLifecycle(emptyList())
     var creating by remember { mutableStateOf(false) }
-    val bottomBarSpace = LocalBottomBarSpace.current
 
     Scaffold(topBar = { TopAppBar(title = { Text(stringResource(R.string.tab_albums)) }) }) { padding ->
         LazyVerticalGrid(
-            columns = GridCells.Adaptive(160.dp),
+            columns = GridCells.Adaptive(150.dp),
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(
                 start = 12.dp,
                 end = 12.dp,
                 top = padding.calculateTopPadding(),
-                bottom = padding.calculateBottomPadding() + bottomBarSpace + 16.dp,
+                bottom = padding.calculateBottomPadding() + 16.dp,
             ),
         ) {
             section(R.string.section_collections)
-            items(collections, key = { "c${it.collection.id}" }) { tile ->
-                val collection = tile.collection
-                AlbumTile(
-                    title = if (collection.isFavorites) stringResource(R.string.favorites) else collection.name,
-                    subtitle = pluralStringResource(R.plurals.items_count, collection.count, collection.count),
-                    covers = tile.covers,
-                    icon = if (collection.isFavorites) Icons.Filled.Favorite else Icons.Outlined.Collections,
-                    onClick = { onOpenCollection(collection.id) },
-                )
-            }
             item(key = "new") {
                 AlbumTile(
                     title = stringResource(R.string.collection_new),
                     subtitle = null,
-                    covers = emptyList(),
+                    coverUri = null,
                     icon = Icons.Filled.Add,
                     onClick = { creating = true },
                 )
             }
+            items(collections, key = { "c${it.id}" }) { collection ->
+                AlbumTile(
+                    title = if (collection.isFavorites) stringResource(R.string.favorites) else collection.name,
+                    subtitle = pluralStringResource(R.plurals.items_count, collection.count, collection.count),
+                    coverUri = collection.coverUri,
+                    icon = if (collection.isFavorites) Icons.Filled.Favorite else Icons.Outlined.Collections,
+                    onClick = { onOpenCollection(collection.id) },
+                )
+            }
 
             section(R.string.section_folders)
-            items(folders, key = { "f${it.folder.relativePath}" }) { tile ->
-                val folder = tile.folder
+            items(folders, key = { "f${it.relativePath}" }) { folder ->
                 AlbumTile(
                     title = folder.bucketName.ifBlank { folder.relativePath },
                     subtitle = pluralStringResource(R.plurals.items_count, folder.count, folder.count),
-                    covers = tile.covers,
+                    coverUri = folder.coverUri,
                     icon = Icons.Outlined.Folder,
                     onClick = { onOpenFolder(folder.relativePath, folder.bucketName) },
                 )
@@ -128,7 +113,7 @@ fun AlbumsScreen(
                 AlbumTile(
                     title = stringResource(R.string.trash),
                     subtitle = null,
-                    covers = emptyList(),
+                    coverUri = null,
                     icon = Icons.Outlined.Delete,
                     onClick = onOpenTrash,
                 )
@@ -155,98 +140,64 @@ private fun LazyGridScope.section(@StringRes title: Int) {
         Text(
             stringResource(title),
             style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(start = 4.dp, top = 20.dp, bottom = 8.dp),
+            modifier = Modifier.padding(start = 4.dp, top = 16.dp, bottom = 8.dp),
         )
     }
 }
 
-/**
- * Cartão de álbum: mosaico com as 4 fotografias mais recentes (ou uma só, se houver menos) e o
- * título por cima, sobre um gradiente. Encolhe ligeiramente quando é premido.
- */
 @Composable
 private fun AlbumTile(
     title: String,
     subtitle: String?,
-    covers: List<String>,
+    coverUri: String?,
     icon: ImageVector,
     onClick: () -> Unit,
 ) {
-    val interaction = remember { MutableInteractionSource() }
-    val pressed by interaction.collectIsPressedAsState()
-    val scale by animateFloatAsState(if (pressed) 0.95f else 1f, spring(dampingRatio = 0.5f, stiffness = 700f), label = "press")
-    val shape = RoundedCornerShape(20.dp)
-
-    Box(
+    Column(
         Modifier
-            .padding(5.dp)
-            .fillMaxWidth()
-            .aspectRatio(1f)
-            .graphicsLayer {
-                scaleX = scale
-                scaleY = scale
-            }
-            .clip(shape)
-            .background(MaterialTheme.colorScheme.surfaceVariant)
-            .clickable(interactionSource = interaction, indication = null, onClick = onClick),
+            .padding(4.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .clickable(onClick = onClick)
+            .padding(bottom = 8.dp),
     ) {
-        when {
-            covers.size >= 4 -> Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                for (row in 0 until 2) {
-                    Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                        for (column in 0 until 2) {
-                            Cover(covers[row * 2 + column], Modifier.weight(1f))
-                        }
-                    }
-                }
-            }
-            covers.isNotEmpty() -> Cover(covers.first(), Modifier.fillMaxSize(), sizePx = 512)
-            else -> Icon(
-                icon,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier
-                    .align(Alignment.Center)
-                    .padding(bottom = 24.dp)
-                    .size(40.dp),
-            )
-        }
-
-        val hasCover = covers.isNotEmpty()
-        if (hasCover) {
-            Box(
-                Modifier
-                    .fillMaxSize()
-                    .background(Brush.verticalGradient(0.55f to Color.Transparent, 1f to Color.Black.copy(alpha = 0.72f))),
-            )
-        }
-        val textColor = if (hasCover) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
-        Column(
+        Box(
             Modifier
-                .align(Alignment.BottomStart)
-                .padding(12.dp),
+                .fillMaxWidth()
+                .aspectRatio(1f)
+                .clip(RoundedCornerShape(16.dp))
+                .background(MaterialTheme.colorScheme.surfaceVariant),
+            contentAlignment = Alignment.Center,
         ) {
-            Text(
-                title,
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold,
-                color = textColor,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            if (subtitle != null) {
-                Text(subtitle, style = MaterialTheme.typography.labelSmall, color = textColor.copy(alpha = 0.85f))
+            if (coverUri != null) {
+                AsyncImage(
+                    model = remember(coverUri) { MediaThumbnail(coverUri.toUri(), 384) },
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            } else {
+                Icon(
+                    icon,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(40.dp),
+                )
             }
+        }
+        Text(
+            title,
+            style = MaterialTheme.typography.titleSmall,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(start = 4.dp, top = 6.dp),
+        )
+        if (subtitle != null) {
+            Text(
+                subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 4.dp),
+            )
         }
     }
-}
-
-@Composable
-private fun Cover(uri: String, modifier: Modifier = Modifier, sizePx: Int = MediaThumbnail.GRID_SIZE_PX) {
-    AsyncImage(
-        model = remember(uri, sizePx) { MediaThumbnail(uri.toUri(), sizePx) },
-        contentDescription = null,
-        contentScale = ContentScale.Crop,
-        modifier = modifier.fillMaxSize(),
-    )
 }

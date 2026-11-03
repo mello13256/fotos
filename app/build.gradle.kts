@@ -77,7 +77,6 @@ dependencies {
     implementation(libs.androidx.media3.exoplayer)
     implementation(libs.androidx.media3.ui)
     implementation(libs.androidx.datastore.preferences)
-    implementation(libs.androidx.palette)
     implementation(libs.coil.compose)
     implementation(libs.kotlinx.coroutines.android)
 

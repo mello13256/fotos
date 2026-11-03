@@ -14,8 +14,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
-import io.github.mello13256.fotos.data.AppSettings
-import io.github.mello13256.fotos.data.ColorSource
 import io.github.mello13256.fotos.data.ThemeMode
 
 private val LightColors = lightColorScheme(
@@ -43,8 +41,7 @@ private val DarkColors = darkColorScheme(
 @Composable
 fun FotosTheme(
     mode: ThemeMode = ThemeMode.SYSTEM,
-    colorSource: ColorSource = AppSettings.defaultColorSource,
-    seedColor: Int? = null,
+    dynamicColor: Boolean = true,
     content: @Composable () -> Unit,
 ) {
     val dark = when (mode) {
@@ -54,8 +51,7 @@ fun FotosTheme(
     }
     val context = LocalContext.current
     val colors = when {
-        colorSource == ColorSource.PHOTO && seedColor != null -> seedColorScheme(Color(seedColor), dark)
-        colorSource == ColorSource.WALLPAPER && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ->
+        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ->
             if (dark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         dark -> DarkColors
         else -> LightColors

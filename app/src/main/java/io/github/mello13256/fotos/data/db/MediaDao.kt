@@ -48,40 +48,6 @@ interface MediaDao {
     )
     suspend fun idsFolder(relativePath: String): List<Long>
 
-    @Query(
-        """SELECT * FROM media WHERE missingSince IS NULL AND kind IN (0, 1)
-           AND dateTaken >= :start AND dateTaken < :end
-           ORDER BY dateTaken DESC, id DESC""",
-    )
-    fun pagePeriod(start: Long, end: Long): PagingSource<Int, MediaEntity>
-
-    @Query(
-        """SELECT id FROM media WHERE missingSince IS NULL AND kind IN (0, 1)
-           AND dateTaken >= :start AND dateTaken < :end
-           ORDER BY dateTaken DESC, id DESC""",
-    )
-    suspend fun idsPeriod(start: Long, end: Long): List<Long>
-
-    @Query(
-        """SELECT * FROM media WHERE missingSince IS NULL AND kind = 0
-           AND dateTaken >= :start AND dateTaken < :end
-           ORDER BY dateTaken DESC LIMIT :limit""",
-    )
-    suspend fun photosInPeriod(start: Long, end: Long, limit: Int): List<MediaEntity>
-
-    @Query(
-        """SELECT uri FROM media WHERE missingSince IS NULL AND relativePath = :relativePath
-           ORDER BY dateTaken DESC LIMIT :limit""",
-    )
-    suspend fun folderCoverUris(relativePath: String, limit: Int): List<String>
-
-    @Query(
-        """SELECT m.uri FROM collection_items ci INNER JOIN media m ON m.id = ci.mediaId
-           WHERE ci.collectionId = :collectionId AND m.missingSince IS NULL
-           ORDER BY m.dateTaken DESC LIMIT :limit""",
-    )
-    suspend fun collectionCoverUris(collectionId: Long, limit: Int): List<String>
-
     @Query("SELECT * FROM media WHERE id = :id")
     fun observe(id: Long): Flow<MediaEntity?>
 
