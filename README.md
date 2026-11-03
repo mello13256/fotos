@@ -2,6 +2,31 @@
 
 Não é "mais uma galeria". É uma galeria completa que substitui a do sistema e, por cima dela, um gestor de fotografias a sério: organização, pesquisa e privacidade, tudo processado no dispositivo.
 
+## Estado
+
+Fase 1 em curso. Já existe:
+
+- Índice local da biblioteca sincronizado com o MediaStore, com identidade estável por item (ver abaixo).
+- Grelha com cabeçalhos por mês, pinça para mudar o número de colunas e filtros (tudo, fotografias, vídeos, capturas de ecrã).
+- Seleção múltipla: toque longo e arrastar para selecionar intervalos, com deslocamento automático nas margens.
+- Coleções virtuais e favoritos, pastas do dispositivo, partilha, reciclagem do sistema (restaurar / eliminar definitivamente).
+- Visualizador com deslizar, pinça, toque duplo e reprodução de vídeo.
+- Abrir fotografias e vídeos vindos de outras apps (pode ser escolhida como galeria predefinida).
+- Tema claro, escuro e Material You. Acesso parcial do Android 14 tratado.
+
+## Compilar e instalar
+
+Requisitos: JDK 17+ e Android SDK (API 36).
+
+```bash
+./gradlew :core:model:test      # testes da lógica de identidade e classificação
+./gradlew :app:assembleDebug    # APK em app/build/outputs/apk/debug/
+```
+
+Cada envio para o GitHub corre o workflow **Android**, que executa os testes e o lint e publica o APK de depuração como artefacto (`fotos-debug-apk`) na página da execução. Basta descarregá-lo e instalá-lo no telemóvel (Android 11 ou superior).
+
+O esquema da base de dados é exportado para `app/schemas/` na primeira compilação local; deve ser incluído no repositório para permitir migrações.
+
 ## Âmbito
 
 Ecossistema completo (galeria + gestor), construído **por fases**. A primeira fase tem de ser uma galeria excelente, porque um gestor que não é a galeria predefinida acaba por não ser aberto, e as funcionalidades avançadas ficam esquecidas.
@@ -58,8 +83,9 @@ O ficheiro original nunca é copiado nem movido para organizar. Álbuns, etiquet
 | Ser galeria predefinida | Registar `intent-filter` para `ACTION_VIEW` e `image/*`, `video/*`; tratar URIs `content://` vindos de outras apps. |
 | Desempenho | Miniaturas via `ContentResolver.loadThumbnail`, cache em disco, Paging 3. A grelha é o ecrã mais usado — não pode falhar um único frame. |
 
-## Arquitetura proposta
+## Arquitetura
 
+- **Android 11+ (API 30)**: reciclagem do sistema, pedidos de eliminação em lote e armazenamento delimitado disponíveis em todas as versões suportadas.
 - **Kotlin + Jetpack Compose** (nativo: o MediaStore, as permissões e o desempenho da grelha justificam não usar Flutter/React Native).
 - **Room** — coleções virtuais, etiquetas, índice de pesquisa, histórico.
 - **Paging 3 + Coil** — grelha e miniaturas.
@@ -68,7 +94,12 @@ O ficheiro original nunca é copiado nem movido para organizar. Álbuns, etiquet
 - **LiteRT (TensorFlow Lite) / ML Kit** — modelos no dispositivo.
 - **Tink / Jetpack Security** — cifra do cofre.
 
-Módulos: `core:media` (acesso ao MediaStore e reconciliação de identidades), `core:data` (Room), `feature:grid`, `feature:viewer`, `feature:collections`, `feature:vault`, `feature:search`, `indexer`.
+Módulos:
+
+- `core:model` — Kotlin puro, sem Android: reconciliação de identidades (`Reconciler`) e classificação de itens (`MediaKind`). Testado na JVM.
+- `app` — dados (`data/`: Room, leitura do MediaStore, sincronização, reciclagem, definições) e interface (`ui/`: grelha, visualizador, álbuns, coleções, reciclagem, definições).
+
+À medida que as fases avançarem, as funcionalidades maiores (cofre, pesquisa, indexação) passam a módulos próprios.
 
 ## Fora de âmbito (por agora)
 

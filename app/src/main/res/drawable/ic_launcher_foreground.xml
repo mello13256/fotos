@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Quatro quadrados com cantos arredondados: uma grelha de fotografias. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#FFF2B8B5"
+        android:pathData="M40,34h12v18h-18v-12a6,6 0,0 1,6 -6z" />
+    <path
+        android:fillColor="#FFB8C8F2"
+        android:pathData="M56,34h12a6,6 0,0 1,6 6v12h-18z" />
+    <path
+        android:fillColor="#FFB8F2CB"
+        android:pathData="M34,56h18v18h-12a6,6 0,0 1,-6 -6z" />
+    <path
+        android:fillColor="#FFF2E3B8"
+        android:pathData="M56,56h18v12a6,6 0,0 1,-6 6h-12z" />
+</vector>

@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Fotos</string>
+
+    <!-- Navegação -->
+    <string name="tab_photos">Fotos</string>
+    <string name="tab_albums">Álbuns</string>
+    <string name="back">Voltar</string>
+    <string name="settings">Definições</string>
+    <string name="more_options">Mais opções</string>
+
+    <!-- Permissões -->
+    <string name="permission_title">As tuas fotografias, organizadas</string>
+    <string name="permission_body">Para mostrar a tua biblioteca, a app precisa de acesso às fotografias e aos vídeos. Tudo é processado no dispositivo: a app não tem acesso à Internet.</string>
+    <string name="permission_grant">Permitir acesso</string>
+    <string name="permission_open_settings">Abrir definições da app</string>
+    <string name="partial_access_title">Acesso limitado</string>
+    <string name="partial_access_body">Só estão visíveis as fotografias que escolheste. Permite o acesso a toda a biblioteca para a ver por completo.</string>
+    <string name="partial_access_action">Gerir acesso</string>
+
+    <!-- Biblioteca -->
+    <string name="filter_all">Tudo</string>
+    <string name="filter_photos">Fotografias</string>
+    <string name="filter_videos">Vídeos</string>
+    <string name="filter_screenshots">Capturas de ecrã</string>
+    <string name="empty_library">Ainda não há fotografias nem vídeos.</string>
+    <string name="empty_collection">Esta coleção está vazia. Seleciona fotografias na biblioteca e adiciona-as aqui: os ficheiros não são copiados nem movidos.</string>
+
+    <!-- Seleção e ações -->
+    <plurals name="selected_count">
+        <item quantity="one">%d selecionado</item>
+        <item quantity="other">%d selecionados</item>
+    </plurals>
+    <string name="cancel_selection">Cancelar seleção</string>
+    <string name="select_all">Selecionar tudo</string>
+    <string name="share">Partilhar</string>
+    <string name="add_to_favorites">Adicionar aos favoritos</string>
+    <string name="remove_from_favorites">Remover dos favoritos</string>
+    <string name="add_to_collection">Adicionar a uma coleção</string>
+    <string name="remove_from_collection">Remover da coleção</string>
+    <string name="move_to_trash">Mover para a reciclagem</string>
+
+    <!-- Álbuns e coleções -->
+    <string name="section_collections">Coleções</string>
+    <string name="section_folders">Pastas no dispositivo</string>
+    <string name="section_utilities">Utilitários</string>
+    <string name="favorites">Favoritos</string>
+    <string name="collection_new">Nova coleção</string>
+    <string name="collection_name">Nome</string>
+    <string name="collection_delete">Eliminar coleção</string>
+    <string name="collection_delete_body">A coleção é eliminada, mas as fotografias continuam na biblioteca e nas outras coleções.</string>
+    <string name="rename">Mudar o nome</string>
+    <string name="create">Criar</string>
+    <string name="save">Guardar</string>
+    <string name="cancel">Cancelar</string>
+    <string name="delete">Eliminar</string>
+    <plurals name="items_count">
+        <item quantity="one">%d item</item>
+        <item quantity="other">%d itens</item>
+    </plurals>
+
+    <!-- Reciclagem -->
+    <string name="trash">Reciclagem</string>
+    <string name="trash_hint">Os itens ficam aqui durante 30 dias e depois são eliminados definitivamente.</string>
+    <string name="trash_empty">A reciclagem está vazia.</string>
+    <string name="restore">Restaurar</string>
+    <string name="restore_all">Restaurar tudo</string>
+    <string name="delete_forever">Eliminar definitivamente</string>
+    <string name="empty_trash">Esvaziar reciclagem</string>
+    <plurals name="days_left">
+        <item quantity="one">%d dia</item>
+        <item quantity="other">%d dias</item>
+    </plurals>
+
+    <!-- Definições -->
+    <string name="settings_appearance">Aspeto</string>
+    <string name="theme_system">Igual ao sistema</string>
+    <string name="theme_light">Claro</string>
+    <string name="theme_dark">Escuro</string>
+    <string name="settings_dynamic_color">Cores do fundo de ecrã</string>
+    <string name="settings_dynamic_color_body">Usa as cores do Material You.</string>
+    <string name="settings_management">Gestão</string>
+    <string name="settings_manage_media">Gerir multimédia sem confirmação</string>
+    <string name="settings_manage_media_on">Ativo: mover para a reciclagem e restaurar não pedem confirmação.</string>
+    <string name="settings_manage_media_off">O Android pede confirmação em cada operação. Toca para permitir.</string>
+    <string name="settings_privacy">Privacidade</string>
+    <string name="settings_offline">Sem acesso à Internet</string>
+    <string name="settings_offline_body">A app não pede permissão de rede: as tuas fotografias nunca saem do dispositivo.</string>
+</resources>
