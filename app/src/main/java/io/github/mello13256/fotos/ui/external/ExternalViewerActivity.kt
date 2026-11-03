@@ -35,7 +35,9 @@ import io.github.mello13256.fotos.ui.common.shareMedia
 import io.github.mello13256.fotos.ui.theme.FotosTheme
 import io.github.mello13256.fotos.ui.viewer.ImmersiveSystemBars
 import io.github.mello13256.fotos.ui.viewer.VideoPlayer
-import io.github.mello13256.fotos.ui.viewer.ZoomableImage
+import io.github.mello13256.fotos.ui.viewer.ZoomableBox
+import coil3.compose.AsyncImage
+import androidx.compose.ui.layout.ContentScale
 
 /** Abre uma fotografia ou um vídeo pedido por outra app (galeria predefinida). */
 class ExternalViewerActivity : ComponentActivity() {
@@ -63,11 +65,14 @@ class ExternalViewerActivity : ComponentActivity() {
                     if (isVideo) {
                         VideoPlayer(uri, Modifier.fillMaxSize())
                     } else {
-                        ZoomableImage(
-                            model = uri.toString(),
-                            contentDescription = null,
-                            onTap = { chromeVisible = !chromeVisible },
-                        )
+                        ZoomableBox(onTap = { chromeVisible = !chromeVisible }) {
+                            AsyncImage(
+                                model = uri.toString(),
+                                contentDescription = null,
+                                contentScale = ContentScale.Fit,
+                                modifier = Modifier.fillMaxSize(),
+                            )
+                        }
                     }
                     AnimatedVisibility(visible = chromeVisible, enter = fadeIn(), exit = fadeOut()) {
                         Row(

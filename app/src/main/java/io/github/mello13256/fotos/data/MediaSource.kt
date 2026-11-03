@@ -16,11 +16,15 @@ sealed interface MediaSource {
     data class Collection(val id: Long) : MediaSource
     data class Folder(val relativePath: String) : MediaSource
 
+    /** Fotografias e vídeos num intervalo de tempo (usado pelas memórias "Por esta altura"). */
+    data class Period(val start: Long, val end: Long) : MediaSource
+
     /** Representação em texto para passar entre ecrãs. */
     fun encode(): String = when (this) {
         is Library -> "lib:${filter.name}"
         is Collection -> "col:$id"
         is Folder -> "dir:$relativePath"
+        is Period -> "per:$start-$end"
     }
 
     companion object {
@@ -30,6 +34,11 @@ sealed interface MediaSource {
             return when (type) {
                 "col" -> arg.toLongOrNull()?.let(::Collection)
                 "dir" -> Folder(arg)
+                "per" -> {
+                    val start = arg.substringBefore('-').toLongOrNull()
+                    val end = arg.substringAfter('-', "").toLongOrNull()
+                    if (start != null && end != null) Period(start, end) else null
+                }
                 "lib" -> LibraryFilter.entries.firstOrNull { it.name == arg }?.let(::Library)
                 else -> null
             } ?: Library()

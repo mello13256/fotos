@@ -21,14 +21,20 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.mello13256.fotos.R
+import io.github.mello13256.fotos.data.AppSettings
 import io.github.mello13256.fotos.data.LibraryFilter
+import io.github.mello13256.fotos.data.Memory
 import io.github.mello13256.fotos.data.MediaSource
+import io.github.mello13256.fotos.ui.common.appContainer
 import io.github.mello13256.fotos.ui.common.gridViewModel
+import io.github.mello13256.fotos.ui.mascot.MascotLayer
 import io.github.mello13256.fotos.ui.grid.GridScreen
 import io.github.mello13256.fotos.ui.permission.MediaAccess
 import io.github.mello13256.fotos.ui.permission.MediaPermission
@@ -39,15 +45,32 @@ fun PhotosScreen(
     onAccessChanged: () -> Unit,
     onOpen: (MediaSource, Long) -> Unit,
     onOpenSettings: () -> Unit,
+    focusId: Long? = null,
+    onFocusConsumed: () -> Unit = {},
 ) {
+    val container = appContainer()
     val viewModel = gridViewModel(MediaSource.Library(), key = "library")
     val source by viewModel.source.collectAsStateWithLifecycle()
     val filter = (source as? MediaSource.Library)?.filter ?: LibraryFilter.ALL
+    val settings by container.settings.settings.collectAsStateWithLifecycle(AppSettings())
+    val libraryCount by remember(container) { container.media.count() }.collectAsStateWithLifecycle(0)
+    val memories by produceState(emptyList<Memory>(), libraryCount) {
+        value = runCatching { container.media.memories() }.getOrDefault(emptyList())
+    }
+    val showMemories = memories.isNotEmpty() && (filter == LibraryFilter.ALL || filter == LibraryFilter.PHOTOS)
+    val memoriesContent: (@Composable () -> Unit)? =
+        if (showMemories) ({ MemoriesRow(memories) { onOpen(it.source, it.photos.first().id) } }) else null
 
     GridScreen(
         viewModel = viewModel,
         title = stringResource(R.string.tab_photos),
         onOpen = onOpen,
+        focusId = focusId,
+        onFocusConsumed = onFocusConsumed,
+        leading = memoriesContent,
+        overlay = { state, bottomPadding ->
+            if (settings.mascotEnabled) MascotLayer(state, bottomPadding)
+        },
         actions = {
             IconButton(onClick = onOpenSettings) {
                 Icon(Icons.Outlined.Settings, stringResource(R.string.settings))

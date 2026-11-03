@@ -4,7 +4,13 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -40,7 +46,9 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.mello13256.fotos.R
 import io.github.mello13256.fotos.data.AppSettings
+import io.github.mello13256.fotos.data.ColorSource
 import io.github.mello13256.fotos.data.ThemeMode
+import io.github.mello13256.fotos.ui.mascot.LumiPortrait
 import io.github.mello13256.fotos.ui.common.appContainer
 import kotlinx.coroutines.launch
 
@@ -86,18 +94,43 @@ fun SettingsScreen(onBack: () -> Unit) {
                     ),
                 )
             }
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                ListItem(
-                    headlineContent = { Text(stringResource(R.string.settings_dynamic_color)) },
-                    supportingContent = { Text(stringResource(R.string.settings_dynamic_color_body)) },
-                    trailingContent = {
-                        Switch(
-                            checked = settings.dynamicColor,
-                            onCheckedChange = { scope.launch { container.settings.setDynamicColor(it) } },
-                        )
-                    },
-                )
-            }
+
+            SectionTitle(stringResource(R.string.settings_colors))
+            ColorSource.entries
+                .filter { it != ColorSource.WALLPAPER || Build.VERSION.SDK_INT >= Build.VERSION_CODES.S }
+                .forEach { source ->
+                    val available = source != ColorSource.PHOTO || settings.seedColor != null
+                    val seed = settings.seedColor
+                    val swatch: (@Composable () -> Unit)? =
+                        if (source == ColorSource.PHOTO && seed != null) ({ ColorSwatch(Color(seed)) }) else null
+                    ListItem(
+                        headlineContent = { Text(stringResource(source.label)) },
+                        supportingContent = { Text(stringResource(source.description)) },
+                        leadingContent = {
+                            RadioButton(selected = settings.colorSource == source, onClick = null, enabled = available)
+                        },
+                        trailingContent = swatch,
+                        modifier = Modifier.selectable(
+                            selected = settings.colorSource == source,
+                            enabled = available,
+                            role = Role.RadioButton,
+                            onClick = { scope.launch { container.settings.setColorSource(source) } },
+                        ),
+                    )
+                }
+
+            SectionTitle(stringResource(R.string.settings_mascot))
+            ListItem(
+                headlineContent = { Text(stringResource(R.string.settings_mascot_show)) },
+                supportingContent = { Text(stringResource(R.string.settings_mascot_body)) },
+                leadingContent = { LumiPortrait(size = 40.dp) },
+                trailingContent = {
+                    Switch(
+                        checked = settings.mascotEnabled,
+                        onCheckedChange = { scope.launch { container.settings.setMascotEnabled(it) } },
+                    )
+                },
+            )
 
             SectionTitle(stringResource(R.string.settings_management))
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -130,6 +163,16 @@ fun SettingsScreen(onBack: () -> Unit) {
 }
 
 @Composable
+private fun ColorSwatch(color: Color) {
+    Box(
+        Modifier
+            .size(28.dp)
+            .clip(CircleShape)
+            .background(color),
+    )
+}
+
+@Composable
 private fun SectionTitle(text: String) {
     Text(
         text,
@@ -138,6 +181,20 @@ private fun SectionTitle(text: String) {
         modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 24.dp, bottom = 8.dp),
     )
 }
+
+private val ColorSource.label: Int
+    get() = when (this) {
+        ColorSource.WALLPAPER -> R.string.colors_wallpaper
+        ColorSource.PHOTO -> R.string.colors_photo
+        ColorSource.DEFAULT -> R.string.colors_default
+    }
+
+private val ColorSource.description: Int
+    get() = when (this) {
+        ColorSource.WALLPAPER -> R.string.colors_wallpaper_body
+        ColorSource.PHOTO -> R.string.colors_photo_body
+        ColorSource.DEFAULT -> R.string.colors_default_body
+    }
 
 private val ThemeMode.label: Int
     get() = when (this) {

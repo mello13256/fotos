@@ -18,7 +18,12 @@ import kotlinx.coroutines.withContext
  * Miniatura de um item do MediaStore. Usa as miniaturas que o sistema já mantém em cache, o que
  * é muito mais rápido do que descodificar o ficheiro original, e funciona também para vídeos.
  */
-data class MediaThumbnail(val uri: Uri, val sizePx: Int)
+data class MediaThumbnail(val uri: Uri, val sizePx: Int = GRID_SIZE_PX) {
+    companion object {
+        /** Tamanho único para a grelha e o visualizador, para partilharem a cache. */
+        const val GRID_SIZE_PX = 384
+    }
+}
 
 class MediaThumbnailFetcher(
     private val data: MediaThumbnail,
@@ -29,7 +34,9 @@ class MediaThumbnailFetcher(
         val bitmap = resolver.loadThumbnail(data.uri, Size(data.sizePx, data.sizePx), null)
         ImageFetchResult(
             image = bitmap.asImage(),
-            isSampled = true,
+            // Marcado como não reduzido para o Coil reutilizar a mesma miniatura da cache em
+            // qualquer tamanho: é ela que aparece primeiro no visualizador e na transição.
+            isSampled = false,
             dataSource = DataSource.DISK,
         )
     }

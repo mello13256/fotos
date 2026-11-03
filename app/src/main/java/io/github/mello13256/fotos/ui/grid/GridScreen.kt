@@ -7,10 +7,12 @@ import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.grid.LazyGridState
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
@@ -41,6 +43,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -50,8 +53,11 @@ import io.github.mello13256.fotos.R
 import io.github.mello13256.fotos.data.AppSettings
 import io.github.mello13256.fotos.data.CollectionRepository
 import io.github.mello13256.fotos.data.MediaSource
+import io.github.mello13256.fotos.ui.common.LocalBottomBarSpace
 import io.github.mello13256.fotos.ui.common.appContainer
 import io.github.mello13256.fotos.ui.common.shareMedia
+import io.github.mello13256.fotos.ui.mascot.LumiPortrait
+import io.github.mello13256.fotos.ui.mascot.MascotEvent
 import kotlinx.coroutines.launch
 
 /**
@@ -68,6 +74,10 @@ fun GridScreen(
     actions: @Composable RowScope.() -> Unit = {},
     header: @Composable () -> Unit = {},
     emptyText: String = stringResource(R.string.empty_library),
+    leading: (@Composable () -> Unit)? = null,
+    focusId: Long? = null,
+    onFocusConsumed: () -> Unit = {},
+    overlay: @Composable BoxScope.(state: LazyGridState, bottomPadding: Dp) -> Unit = { _, _ -> },
 ) {
     val container = appContainer()
     val context = LocalContext.current
@@ -80,9 +90,14 @@ fun GridScreen(
     val hasSynced by container.mediaSync.hasSynced.collectAsStateWithLifecycle()
     val collections by container.collections.summaries.collectAsStateWithLifecycle(emptyList())
     var showPicker by remember { mutableStateOf(false) }
+    val gridState = rememberLazyGridState()
+    val bottomBarSpace = LocalBottomBarSpace.current
 
     val trashLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) {
-        if (it.resultCode == Activity.RESULT_OK) viewModel.onTrashed()
+        if (it.resultCode == Activity.RESULT_OK) {
+            viewModel.onTrashed()
+            container.mascotEvents.tryEmit(MascotEvent.TRASH)
+        }
     }
 
     BackHandler(enabled = selection.isNotEmpty()) { viewModel.clearSelection() }
@@ -129,7 +144,10 @@ fun GridScreen(
                                 Icon(Icons.Outlined.RemoveCircleOutline, stringResource(R.string.remove_from_collection))
                             }
                         } else {
-                            IconButton(onClick = { viewModel.addSelectionTo(CollectionRepository.FAVORITES_ID) }) {
+                            IconButton(onClick = {
+                                viewModel.addSelectionTo(CollectionRepository.FAVORITES_ID)
+                                container.mascotEvents.tryEmit(MascotEvent.FAVORITE)
+                            }) {
                                 Icon(Icons.Outlined.FavoriteBorder, stringResource(R.string.add_to_favorites))
                             }
                         }
@@ -156,6 +174,7 @@ fun GridScreen(
                 .padding(top = padding.calculateTopPadding()),
         ) {
             header()
+            val bottomPadding = padding.calculateBottomPadding() + bottomBarSpace
             Box(Modifier.fillMaxSize()) {
                 MediaGrid(
                     items = items,
@@ -165,23 +184,36 @@ fun GridScreen(
                     onSelectionChange = viewModel::setSelection,
                     onOpen = { onOpen(source, it.id) },
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(bottom = padding.calculateBottomPadding() + 8.dp),
+                    bottomPadding = bottomPadding,
+                    state = gridState,
+                    leading = leading,
+                    focusId = focusId,
+                    onFocusConsumed = onFocusConsumed,
+                    onSelectionStarted = { container.mascotEvents.tryEmit(MascotEvent.SELECT) },
                 )
                 val loading = items.loadState.refresh is LoadState.Loading
                 if (items.itemCount == 0 && !loading) {
                     if (!hasSynced) {
                         CircularProgressIndicator(Modifier.align(Alignment.Center))
                     } else {
-                        Text(
-                            emptyText,
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier
+                        Column(
+                            Modifier
                                 .align(Alignment.Center)
                                 .padding(32.dp),
-                        )
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                        ) {
+                            LumiPortrait(size = 88.dp, sleeping = true)
+                            Text(
+                                emptyText,
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.padding(top = 16.dp),
+                            )
+                        }
                     }
+                } else {
+                    overlay(gridState, bottomPadding)
                 }
             }
         }
@@ -192,6 +224,7 @@ fun GridScreen(
             collections = collections,
             onPick = {
                 viewModel.addSelectionTo(it)
+                if (it == CollectionRepository.FAVORITES_ID) container.mascotEvents.tryEmit(MascotEvent.FAVORITE)
                 showPicker = false
             },
             onCreate = {
