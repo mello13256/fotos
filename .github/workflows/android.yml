@@ -12,6 +12,8 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
@@ -32,6 +34,19 @@ jobs:
           name: fotos-debug-apk
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
+
+      - name: Publicar APK na release "debug"
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp app/build/outputs/apk/debug/app-debug.apk fotos-debug.apk
+          gh release delete debug --yes --cleanup-tag || true
+          gh release create debug fotos-debug.apk \
+            --prerelease \
+            --target "$GITHUB_SHA" \
+            --title "Fotos (depuração)" \
+            --notes "APK de depuração gerado automaticamente a partir de ${GITHUB_SHA::7} (ramo ${GITHUB_REF_NAME})."
 
       - name: Publicar relatórios
         if: always()
