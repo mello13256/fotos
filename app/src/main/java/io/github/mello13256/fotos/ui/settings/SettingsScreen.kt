@@ -48,7 +48,6 @@ import io.github.mello13256.fotos.R
 import io.github.mello13256.fotos.data.AppSettings
 import io.github.mello13256.fotos.data.ColorSource
 import io.github.mello13256.fotos.data.ThemeMode
-import io.github.mello13256.fotos.ui.mascot.LumiPortrait
 import io.github.mello13256.fotos.ui.common.appContainer
 import kotlinx.coroutines.launch
 
@@ -118,19 +117,6 @@ fun SettingsScreen(onBack: () -> Unit) {
                         ),
                     )
                 }
-
-            SectionTitle(stringResource(R.string.settings_mascot))
-            ListItem(
-                headlineContent = { Text(stringResource(R.string.settings_mascot_show)) },
-                supportingContent = { Text(stringResource(R.string.settings_mascot_body)) },
-                leadingContent = { LumiPortrait(size = 40.dp) },
-                trailingContent = {
-                    Switch(
-                        checked = settings.mascotEnabled,
-                        onCheckedChange = { scope.launch { container.settings.setMascotEnabled(it) } },
-                    )
-                },
-            )
 
             SectionTitle(stringResource(R.string.settings_management))
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {

@@ -89,14 +89,17 @@ fun FastScroller(
         val trackPx = (constraints.maxHeight - thumbHeightPx).coerceAtLeast(1f)
         val currentTrack by rememberUpdatedState(trackPx)
         val currentFirst by rememberUpdatedState(firstIndex)
-        val fraction = if (dragging) {
-            dragFraction
-        } else {
-            val visibleCount = state.layoutInfo.visibleItemsInfo.size.coerceAtLeast(1)
-            val index = (state.firstVisibleItemIndex - firstIndex).coerceAtLeast(0)
-            (index.toFloat() / (itemCount - visibleCount).coerceAtLeast(1)).coerceIn(0f, 1f)
+        // A posição é lida só na fase de layout, para o deslocamento não recompor este ecrã.
+        fun thumbY(): Int {
+            val fraction = if (dragging) {
+                dragFraction
+            } else {
+                val visibleCount = state.layoutInfo.visibleItemsInfo.size.coerceAtLeast(1)
+                val index = (state.firstVisibleItemIndex - currentFirst).coerceAtLeast(0)
+                (index.toFloat() / (currentCount - visibleCount).coerceAtLeast(1)).coerceIn(0f, 1f)
+            }
+            return (fraction * currentTrack).roundToInt()
         }
-        val thumbY = (fraction * trackPx).roundToInt()
 
         AnimatedVisibility(
             visible = visible,
@@ -105,7 +108,7 @@ fun FastScroller(
             modifier = Modifier.align(Alignment.TopEnd),
         ) {
             Row(
-                Modifier.offset { IntOffset(0, thumbY) },
+                Modifier.offset { IntOffset(0, thumbY()) },
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 AnimatedVisibility(visible = dragging && lastLabel != null, enter = scaleIn() + fadeIn(), exit = scaleOut() + fadeOut()) {

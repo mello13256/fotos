@@ -29,7 +29,6 @@ data class AppSettings(
     val colorSource: ColorSource = defaultColorSource,
     val seedColor: Int? = null,
     val gridColumns: Int = DEFAULT_COLUMNS,
-    val mascotEnabled: Boolean = true,
 ) {
     companion object {
         const val MIN_COLUMNS = 2
@@ -49,7 +48,6 @@ class SettingsRepository(private val context: Context) {
     private val legacyDynamicColorKey = booleanPreferencesKey("dynamic_color")
     private val seedColorKey = intPreferencesKey("seed_color")
     private val gridColumnsKey = intPreferencesKey("grid_columns")
-    private val mascotKey = booleanPreferencesKey("mascot")
 
     val settings: Flow<AppSettings> = context.dataStore.data.map { prefs ->
         val colorSource = prefs[colorSourceKey]?.let { name -> ColorSource.entries.firstOrNull { it.name == name } }
@@ -64,7 +62,6 @@ class SettingsRepository(private val context: Context) {
             seedColor = prefs[seedColorKey],
             gridColumns = (prefs[gridColumnsKey] ?: AppSettings.DEFAULT_COLUMNS)
                 .coerceIn(AppSettings.MIN_COLUMNS, AppSettings.MAX_COLUMNS),
-            mascotEnabled = prefs[mascotKey] ?: true,
         )
     }
 
@@ -88,9 +85,5 @@ class SettingsRepository(private val context: Context) {
         context.dataStore.edit {
             it[gridColumnsKey] = columns.coerceIn(AppSettings.MIN_COLUMNS, AppSettings.MAX_COLUMNS)
         }
-    }
-
-    suspend fun setMascotEnabled(enabled: Boolean) {
-        context.dataStore.edit { it[mascotKey] = enabled }
     }
 }

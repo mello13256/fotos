@@ -84,9 +84,6 @@
     <string name="colors_photo_body">No visualizador, toca na paleta para usar as cores de uma fotografia.</string>
     <string name="colors_default">Padrão</string>
     <string name="colors_default_body">A paleta azul da app.</string>
-    <string name="settings_mascot">Lumi</string>
-    <string name="settings_mascot_show">Mostrar o Lumi</string>
-    <string name="settings_mascot_body">O pequeno fotógrafo que passeia pelas tuas fotografias.</string>
     <string name="settings_management">Gestão</string>
     <string name="settings_manage_media">Gerir multimédia sem confirmação</string>
     <string name="settings_manage_media_on">Ativo: mover para a reciclagem e restaurar não pedem confirmação.</string>
@@ -106,19 +103,4 @@
         <item quantity="other">Há %d anos</item>
     </plurals>
 
-    <!-- Lumi -->
-    <string name="lumi_favorite">Também gosto dessa!</string>
-    <string name="lumi_trash">Adeus, fotografia…</string>
-    <string name="lumi_theme">Que cores bonitas!</string>
-    <string-array name="lumi_phrases">
-        <item>Clique!</item>
-        <item>Que fotografia gira!</item>
-        <item>Faz cócegas!</item>
-        <item>Estou a focar… não te mexas.</item>
-        <item>Esta merece ir para os favoritos.</item>
-        <item>Já viste as memórias de hoje?</item>
-        <item>Adoro o cheiro a fotografias novas.</item>
-        <item>Shhh… estou a guardar as tuas memórias.</item>
-        <item>Mais uma? Mais uma!</item>
-    </string-array>
 </resources>

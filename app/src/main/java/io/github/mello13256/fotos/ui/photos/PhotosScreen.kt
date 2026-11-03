@@ -28,13 +28,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.mello13256.fotos.R
-import io.github.mello13256.fotos.data.AppSettings
 import io.github.mello13256.fotos.data.LibraryFilter
 import io.github.mello13256.fotos.data.Memory
 import io.github.mello13256.fotos.data.MediaSource
 import io.github.mello13256.fotos.ui.common.appContainer
 import io.github.mello13256.fotos.ui.common.gridViewModel
-import io.github.mello13256.fotos.ui.mascot.MascotLayer
 import io.github.mello13256.fotos.ui.grid.GridScreen
 import io.github.mello13256.fotos.ui.permission.MediaAccess
 import io.github.mello13256.fotos.ui.permission.MediaPermission
@@ -52,7 +50,6 @@ fun PhotosScreen(
     val viewModel = gridViewModel(MediaSource.Library(), key = "library")
     val source by viewModel.source.collectAsStateWithLifecycle()
     val filter = (source as? MediaSource.Library)?.filter ?: LibraryFilter.ALL
-    val settings by container.settings.settings.collectAsStateWithLifecycle(AppSettings())
     val libraryCount by remember(container) { container.media.count() }.collectAsStateWithLifecycle(0)
     val memories by produceState(emptyList<Memory>(), libraryCount) {
         value = runCatching { container.media.memories() }.getOrDefault(emptyList())
@@ -68,9 +65,7 @@ fun PhotosScreen(
         focusId = focusId,
         onFocusConsumed = onFocusConsumed,
         leading = memoriesContent,
-        overlay = { state, bottomPadding ->
-            if (settings.mascotEnabled) MascotLayer(state, bottomPadding)
-        },
+
         actions = {
             IconButton(onClick = onOpenSettings) {
                 Icon(Icons.Outlined.Settings, stringResource(R.string.settings))

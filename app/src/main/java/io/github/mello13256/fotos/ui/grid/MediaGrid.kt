@@ -72,7 +72,9 @@ import io.github.mello13256.fotos.image.MediaThumbnail
 import io.github.mello13256.fotos.ui.common.MonthFormat
 import io.github.mello13256.fotos.ui.common.formatDuration
 import io.github.mello13256.fotos.ui.common.sharedMedia
-import io.github.mello13256.fotos.ui.mascot.MEDIA_CONTENT_TYPE
+import io.github.mello13256.fotos.ui.common.LocalActiveSharedMedia
+import androidx.compose.runtime.snapshots.Snapshot
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /**
@@ -99,6 +101,7 @@ fun MediaGrid(
     onFocusConsumed: () -> Unit = {},
     onSelectionStarted: () -> Unit = {},
 ) {
+    val activeShared by LocalActiveSharedMedia.current
     val haptics = LocalHapticFeedback.current
     val density = LocalDensity.current
     val scope = rememberCoroutineScope()
@@ -119,14 +122,16 @@ fun MediaGrid(
     if (focusId != null) {
         val configuration = LocalConfiguration.current
         remember(focusId) {
-            val index = items.itemSnapshotList.indexOfFirst { (it as? GridItem.Media)?.entity?.id == focusId }
-            if (index >= 0) {
-                val gridIndex = index + leadingCount
-                val rows = (configuration.screenHeightDp / (configuration.screenWidthDp / columns.toFloat())).toInt()
-                val first = state.firstVisibleItemIndex
-                if (gridIndex < first || gridIndex > first + (rows - 2).coerceAtLeast(1) * columns) {
-                    state.requestScrollToItem((gridIndex - columns).coerceAtLeast(0))
-                }
+            Snapshot.withoutReadObservation {
+                scrollToFocus(
+                    focusId = focusId,
+                    items = items,
+                    state = state,
+                    columns = columns,
+                    leadingCount = leadingCount,
+                    screenHeightDp = configuration.screenHeightDp,
+                    screenWidthDp = configuration.screenWidthDp,
+                )
             }
             onFocusConsumed()
             true
@@ -142,6 +147,15 @@ fun MediaGrid(
     // Pinça: escala visual enquanto os dedos se movem.
     var pinchScale by remember { mutableFloatStateOf(1f) }
     var pinchOrigin by remember { mutableStateOf(TransformOrigin.Center) }
+
+    // As células só animam a mudança de posição logo a seguir a mudar o número de colunas; no
+    // resto do tempo a animação ficaria ativa em cada célula sem necessidade.
+    var animatePlacement by remember { mutableStateOf(false) }
+    LaunchedEffect(columns) {
+        animatePlacement = true
+        delay(PLACEMENT_ANIMATION_MS)
+        animatePlacement = false
+    }
 
     /** Item na posição da grelha (que inclui o conteúdo inicial). */
     fun mediaAt(gridIndex: Int): MediaEntity? {
@@ -330,12 +344,16 @@ fun MediaGrid(
                 },
             ) { index ->
                 when (val item = items[index]) {
-                    is GridItem.Header -> MonthHeader(item.label, Modifier.animateItem(fadeInSpec = null, fadeOutSpec = null))
+                    is GridItem.Header -> MonthHeader(
+                        item.label,
+                        if (animatePlacement) Modifier.animateItem(fadeInSpec = null, fadeOutSpec = null) else Modifier,
+                    )
                     is GridItem.Media -> MediaCell(
                         media = item.entity,
                         selectionMode = selection.isNotEmpty(),
                         selected = item.entity.id in selection,
-                        modifier = Modifier.animateItem(fadeInSpec = null, fadeOutSpec = null),
+                        shared = item.entity.id == activeShared,
+                        modifier = if (animatePlacement) Modifier.animateItem(fadeInSpec = null, fadeOutSpec = null) else Modifier,
                     )
                     null -> Box(
                         Modifier
@@ -357,6 +375,26 @@ fun MediaGrid(
     }
 }
 
+/** Garante que a fotografia vista no visualizador está no ecrã, para a transição de regresso. */
+private fun scrollToFocus(
+    focusId: Long,
+    items: LazyPagingItems<GridItem>,
+    state: LazyGridState,
+    columns: Int,
+    leadingCount: Int,
+    screenHeightDp: Int,
+    screenWidthDp: Int,
+) {
+    val index = items.itemSnapshotList.indexOfFirst { (it as? GridItem.Media)?.entity?.id == focusId }
+    if (index < 0) return
+    val gridIndex = index + leadingCount
+    val rows = (screenHeightDp / (screenWidthDp / columns.toFloat())).toInt()
+    val first = state.firstVisibleItemIndex
+    if (gridIndex < first || gridIndex > first + (rows - 2).coerceAtLeast(1) * columns) {
+        state.requestScrollToItem((gridIndex - columns).coerceAtLeast(0))
+    }
+}
+
 /** Mês do item na posição dada (ou do mais próximo já carregado). */
 private fun labelNear(items: LazyPagingItems<GridItem>, index: Int): String? {
     for (offset in 0..60) {
@@ -374,6 +412,8 @@ private fun labelNear(items: LazyPagingItems<GridItem>, index: Int): String? {
 private enum class Outcome { TAP, LONG_PRESS, SCROLL, PINCH }
 
 private const val ZOOM_STEP = 1.3f
+private const val PLACEMENT_ANIMATION_MS = 700L
+private const val MEDIA_CONTENT_TYPE = 1
 private const val HEADER_CONTENT_TYPE = 0
 private const val LEADING_CONTENT_TYPE = 2
 
@@ -394,29 +434,35 @@ private fun MediaCell(
     media: MediaEntity,
     selectionMode: Boolean,
     selected: Boolean,
+    shared: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val thumbnail = remember(media.uri) { MediaThumbnail(media.uri.toUri()) }
-    val bouncy = spring<Float>(dampingRatio = 0.5f, stiffness = 600f)
-    val inset by animateFloatAsState(if (selected) 0.84f else 1f, bouncy, label = "inset")
-    val corner by animateDpAsState(if (selected) 14.dp else 0.dp, spring(stiffness = 600f), label = "corner")
-    val checkScale by animateFloatAsState(if (selected) 1f else 0f, bouncy, label = "check")
-    val markerAlpha by animateFloatAsState(if (selectionMode) 1f else 0f, label = "marker")
 
     Box(
         modifier
             .aspectRatio(1f)
             .background(MaterialTheme.colorScheme.surfaceVariant),
     ) {
-        Box(
+        // Fora do modo de seleção, a célula é só a imagem: nada de animações por célula.
+        val imageModifier = if (selectionMode) {
+            val bouncy = spring<Float>(dampingRatio = 0.5f, stiffness = 600f)
+            val inset by animateFloatAsState(if (selected) 0.84f else 1f, bouncy, label = "inset")
+            val corner by animateDpAsState(if (selected) 14.dp else 0.dp, spring(stiffness = 600f), label = "corner")
             Modifier
-                .fillMaxSize()
                 .graphicsLayer {
                     scaleX = inset
                     scaleY = inset
                 }
                 .clip(RoundedCornerShape(corner))
-                .sharedMedia(media.id),
+        } else {
+            Modifier
+        }
+        Box(
+            Modifier
+                .fillMaxSize()
+                .then(imageModifier)
+                .then(if (shared) Modifier.sharedMedia(media.id) else Modifier),
         ) {
             AsyncImage(
                 model = thumbnail,
@@ -449,13 +495,17 @@ private fun MediaCell(
                 )
             }
         }
-        if (markerAlpha > 0f) {
+        if (selectionMode) {
+            val checkScale by animateFloatAsState(
+                if (selected) 1f else 0f,
+                spring(dampingRatio = 0.5f, stiffness = 600f),
+                label = "check",
+            )
             Box(
                 Modifier
                     .align(Alignment.TopStart)
                     .padding(6.dp)
-                    .size(22.dp)
-                    .graphicsLayer { alpha = markerAlpha },
+                    .size(22.dp),
             ) {
                 Icon(Icons.Outlined.Circle, contentDescription = null, tint = Color.White, modifier = Modifier.fillMaxSize())
                 Icon(

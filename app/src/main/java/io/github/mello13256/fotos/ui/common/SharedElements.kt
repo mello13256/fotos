@@ -8,6 +8,8 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
@@ -18,6 +20,12 @@ val LocalSharedTransitionScope = staticCompositionLocalOf<SharedTransitionScope?
 
 /** Animação de entrada/saída do destino de navegação atual. */
 val LocalNavAnimatedScope = staticCompositionLocalOf<AnimatedVisibilityScope?> { null }
+
+/**
+ * Fotografia que participa na transição para o visualizador (a que foi aberta, ou a última vista
+ * ao voltar). Só essa célula da grelha se regista, em vez de todas as visíveis.
+ */
+val LocalActiveSharedMedia = staticCompositionLocalOf<MutableState<Long?>> { mutableStateOf(null) }
 
 /** Espaço ocupado pela barra de navegação inferior nos ecrãs com separadores. */
 val LocalBottomBarSpace = staticCompositionLocalOf<Dp> { 0.dp }

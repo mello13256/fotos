@@ -47,6 +47,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
@@ -56,7 +57,6 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -90,7 +90,6 @@ import io.github.mello13256.fotos.ui.common.appContainer
 import io.github.mello13256.fotos.ui.common.sharedMedia
 import io.github.mello13256.fotos.ui.common.shareMedia
 import io.github.mello13256.fotos.ui.grid.CollectionPickerDialog
-import io.github.mello13256.fotos.ui.mascot.MascotEvent
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
@@ -144,10 +143,12 @@ private fun ViewerPager(
     var chromeVisible by remember { mutableStateOf(true) }
     var showPicker by remember { mutableStateOf(false) }
     val dismiss = remember { Animatable(0f) }
-    val dismissProgress = (dismiss.value / (screenHeightPx * 0.5f)).coerceIn(0f, 1f)
+    // Lido apenas nas fases de layout/desenho, para o arrastamento não recompor o ecrã.
+    fun dismissProgress() = (dismiss.value / (screenHeightPx * 0.5f)).coerceIn(0f, 1f)
+    val atRest by remember { derivedStateOf { dismiss.value == 0f } }
     val currentOnBack by rememberUpdatedState(onBack)
 
-    ImmersiveSystemBars(visible = chromeVisible && dismiss.value == 0f)
+    ImmersiveSystemBars(visible = chromeVisible && atRest)
 
     val currentId = ids.getOrNull(pagerState.currentPage.coerceIn(0, ids.lastIndex))
     val current by remember(currentId) { currentId?.let(viewModel::observe) ?: flowOf(null) }
@@ -199,7 +200,7 @@ private fun ViewerPager(
         Box(
             Modifier
                 .fillMaxSize()
-                .graphicsLayer { alpha = 1f - dismissProgress * 0.7f }
+                .graphicsLayer { alpha = 1f - dismissProgress() * 0.7f }
                 .background(Color.Black),
         ) {
             Crossfade(targetState = currentUri, animationSpec = tween(700), label = "backdrop") { uri ->
@@ -208,9 +209,10 @@ private fun ViewerPager(
                         model = remember(uri) { MediaThumbnail(uri.toUri(), BACKDROP_PX) },
                         contentDescription = null,
                         contentScale = ContentScale.Crop,
+                        // Uma miniatura minúscula ampliada já fica desfocada, sem o custo de um
+                        // efeito de desfoque em ecrã inteiro.
                         modifier = Modifier
                             .fillMaxSize()
-                            .blur(48.dp)
                             .graphicsLayer { alpha = 0.6f },
                     )
                 }
@@ -234,7 +236,7 @@ private fun ViewerPager(
                 .fillMaxSize()
                 .offset { IntOffset(0, dismiss.value.roundToInt()) }
                 .graphicsLayer {
-                    val s = 1f - dismissProgress * 0.15f
+                    val s = 1f - dismissProgress() * 0.15f
                     scaleX = s
                     scaleY = s
                 },
@@ -250,7 +252,7 @@ private fun ViewerPager(
             }
         }
 
-        AnimatedVisibility(visible = chromeVisible && dismiss.value == 0f, enter = fadeIn(), exit = fadeOut()) {
+        AnimatedVisibility(visible = chromeVisible && atRest, enter = fadeIn(), exit = fadeOut()) {
             Box(Modifier.fillMaxSize()) {
                 Row(
                     Modifier
@@ -289,10 +291,7 @@ private fun ViewerPager(
                         Icon(Icons.Outlined.Share, stringResource(R.string.share), tint = Color.White)
                     }
                     IconButton(enabled = media != null, onClick = {
-                        media?.let {
-                            viewModel.setFavorite(it.id, !isFavorite)
-                            if (!isFavorite) container.mascotEvents.tryEmit(MascotEvent.FAVORITE)
-                        }
+                        media?.let { viewModel.setFavorite(it.id, !isFavorite) }
                     }) {
                         Icon(
                             if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
@@ -309,7 +308,6 @@ private fun ViewerPager(
                                 val seed = PhotoColors.palette(context.contentResolver, it.uri.toUri())?.let(PhotoColors::seed)
                                 if (seed != null) {
                                     container.settings.setPhotoColor(seed)
-                                    container.mascotEvents.tryEmit(MascotEvent.THEME)
                                     Toast.makeText(context, R.string.theme_from_photo_done, Toast.LENGTH_SHORT).show()
                                 }
                             }
@@ -403,7 +401,7 @@ private fun MediaPage(media: MediaEntity, isCurrent: Boolean, onTap: () -> Unit)
     }
 }
 
-private const val BACKDROP_PX = 48
+private const val BACKDROP_PX = 24
 private const val PLAYER_DELAY_MS = 400L
 
 /** Esconde as barras do sistema quando os controlos estão escondidos; ícones sempre claros. */

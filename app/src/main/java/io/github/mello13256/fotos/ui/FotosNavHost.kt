@@ -21,6 +21,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -42,6 +44,7 @@ import io.github.mello13256.fotos.data.MediaSource
 import io.github.mello13256.fotos.ui.albums.AlbumsScreen
 import io.github.mello13256.fotos.ui.collection.CollectionScreen
 import io.github.mello13256.fotos.ui.collection.FolderScreen
+import io.github.mello13256.fotos.ui.common.LocalActiveSharedMedia
 import io.github.mello13256.fotos.ui.common.LocalBottomBarSpace
 import io.github.mello13256.fotos.ui.common.LocalNavAnimatedScope
 import io.github.mello13256.fotos.ui.common.LocalSharedTransitionScope
@@ -83,13 +86,20 @@ fun FotosNavHost(access: MediaAccess, onAccessChanged: () -> Unit) {
     val currentRoute = backStack?.destination?.route
     val showTabs = Tab.entries.any { it.route == currentRoute }
 
-    val openViewer: (MediaSource, Long) -> Unit = { source, id -> navController.navigate(Routes.viewer(source, id)) }
+    val activeSharedMedia = remember { mutableStateOf<Long?>(null) }
+    val openViewer: (MediaSource, Long) -> Unit = { source, id ->
+        activeSharedMedia.value = id
+        navController.navigate(Routes.viewer(source, id))
+    }
 
     // A barra inferior sobrepõe-se ao conteúdo (em vez de o encolher), para a grelha não mudar de
     // tamanho ao abrir o visualizador: a transição partilhada parte do sítio certo.
     Box(Modifier.fillMaxSize()) {
         SharedTransitionLayout {
-            CompositionLocalProvider(LocalSharedTransitionScope provides this) {
+            CompositionLocalProvider(
+                LocalSharedTransitionScope provides this,
+                LocalActiveSharedMedia provides activeSharedMedia,
+            ) {
                 NavHost(
                     navController = navController,
                     startDestination = Routes.PHOTOS,
@@ -152,6 +162,7 @@ fun FotosNavHost(access: MediaAccess, onAccessChanged: () -> Unit) {
                             startId = entry.arguments?.getLong("id") ?: 0L,
                             onBack = { navController.popBackStack() },
                             onCurrentChanged = { id ->
+                                activeSharedMedia.value = id
                                 navController.previousBackStackEntry?.savedStateHandle?.set(FOCUS_KEY, id)
                             },
                         )

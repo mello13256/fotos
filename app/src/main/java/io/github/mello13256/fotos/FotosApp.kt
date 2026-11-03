@@ -12,11 +12,9 @@ import io.github.mello13256.fotos.data.media.MediaSync
 import io.github.mello13256.fotos.data.media.TrashRepository
 import io.github.mello13256.fotos.image.MediaThumbnailFetcher
 import io.github.mello13256.fotos.image.MediaThumbnailKeyer
-import io.github.mello13256.fotos.ui.mascot.MascotEvent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
 
 class FotosApp : Application(), SingletonImageLoader.Factory {
@@ -47,9 +45,6 @@ class AppContainer(app: Application) {
     val collections = CollectionRepository(database)
     val trash = TrashRepository(app)
     val mediaSync = MediaSync(app.contentResolver, database, scope)
-
-    /** Acontecimentos a que a mascote reage (favoritos, reciclagem, seleção...). */
-    val mascotEvents = MutableSharedFlow<MascotEvent>(extraBufferCapacity = 8)
 
     init {
         scope.launch { collections.ensureFavorites(app.getString(R.string.favorites)) }

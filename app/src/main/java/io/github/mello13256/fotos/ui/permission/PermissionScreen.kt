@@ -29,7 +29,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import io.github.mello13256.fotos.R
-import io.github.mello13256.fotos.ui.mascot.LumiPortrait
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.PhotoLibrary
+import androidx.compose.material3.Icon
 
 @Composable
 fun PermissionScreen(onResult: () -> Unit) {
@@ -48,7 +51,12 @@ fun PermissionScreen(onResult: () -> Unit) {
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            LumiPortrait(size = 120.dp)
+            Icon(
+                Icons.Outlined.PhotoLibrary,
+                contentDescription = null,
+                modifier = Modifier.size(72.dp),
+                tint = MaterialTheme.colorScheme.primary,
+            )
             Spacer(Modifier.height(24.dp))
             Text(
                 stringResource(R.string.permission_title),
